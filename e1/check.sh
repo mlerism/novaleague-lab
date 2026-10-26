@@ -14,7 +14,7 @@ ping_test() {  # origen destino descripción
 }
 
 echo "VLAN 10 (ejemplo completo):"
-ping_test pc-staff 10.100.10.1 "pc-staff -> gateway virtual VRRP (10.100.10.1)"
+ping_test pc-staff 10.100.10.1 "pc-staff -> gateway anycast (10.100.10.1)"
 ping_test pc-staff 10.100.10.2 "pc-staff -> core1 (10.100.10.2)"
 ping_test pc-staff 10.100.10.3 "pc-staff -> core2 (10.100.10.3)"
 
