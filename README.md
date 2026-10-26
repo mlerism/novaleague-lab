@@ -20,7 +20,7 @@ con GitHub Codespaces.
 
 ```bash
 cd e1
-sudo containerlab deploy -t e1.clab.yml      # crea los equipos (2-3 minutos)
+sudo containerlab deploy -t e1.clab.yml --max-workers 1   # crea los equipos de uno en uno (4-5 minutos)
 sudo containerlab inspect -t e1.clab.yml     # lista los equipos y sus IP de gestión
 bash check.sh                                # comprueba qué funciona y qué falta
 ```
@@ -32,7 +32,7 @@ También la podéis ver gráficamente: `sudo containerlab graph -t e1.clab.yml`.
 
 | Equipo | Qué es | Sistema |
 |---|---|---|
-| core1, core2 | Núcleo/distribución, gateways con VRRP | Nokia SR Linux |
+| core1, core2 | Núcleo/distribución, gateway redundante (anycast) | Nokia SR Linux |
 | acc-of | Acceso de una planta de oficinas | Nokia SR Linux |
 | acc-lab | Acceso del Performance Lab | Nokia SR Linux |
 | pc-staff, pc-tec, sala1-pc, sala2-pc | Ordenadores de usuario | Linux |
@@ -40,11 +40,15 @@ También la podéis ver gráficamente: `sudo containerlab graph -t e1.clab.yml`.
 ## 3. Qué viene configurado y qué tenéis que hacer vosotros
 
 **Configurado como ejemplo (VLAN 10, staff):** el trunk de acc-of hacia los dos core, el puerto de
-pc-staff y el gateway redundante con VRRP en core1 (maestro, prioridad 200) y core2 (respaldo, prioridad 100).
+pc-staff y el gateway redundante en core1 y core2: los dos responden a la misma IP (10.100.10.1) y MAC
+(**gateway anycast**, activo-activo). Cada core tiene además su propia IP (.2 y .3).
+
+> **¿Y VRRP?** SR Linux en esta maqueta no incluye VRRP. En vuestro documento podéis proponer VRRP o HSRP; en la
+> maqueta la redundancia del gateway se demuestra con anycast, la técnica de los CPD con EVPN (E2).
 Leed `e1/configs/*.cfg`: son los comandos que se aplican al arrancar cada equipo.
 
 **A completar por el grupo:**
-- VLAN 20 (técnicos) en acc-of y en los core, con su gateway VRRP.
+- VLAN 20 (técnicos) en acc-of y en los core, con su gateway anycast.
 - Una VLAN por sala en acc-lab y en los core, con su gateway.
 - Routing entre core1 y core2 (por ejemplo, OSPF sobre el enlace `ethernet-1/1`).
 - ACL: las salas no se ven entre sí ni ven la red corporativa; los técnicos sí acceden a las salas.
@@ -67,7 +71,7 @@ Dentro del equipo:
 ```text
 show interface brief                       # estado de los puertos
 show network-instance vlan10 bridge-table mac-table all
-show interface irb0 detail                 # IRB y estado VRRP
+info interface irb0                        # IRB: IP propia y gateway anycast
 enter candidate                            # modo configuración
 set / interface ethernet-1/4 admin-state enable
 diff                                       # qué vais a cambiar
@@ -77,12 +81,13 @@ quit
 
 Para que vuestros cambios se conserven al volver a desplegar, copiadlos también al fichero `.cfg` del equipo.
 
-## 5. Prueba de redundancia (VRRP)
+## 5. Prueba de redundancia del gateway
 
 1. En un terminal: `docker exec -it clab-e1-pc-staff ping 10.100.10.1`
 2. En otro terminal, entrad en core1 y apagad el puerto hacia acc-of:
    `enter candidate` → `set / interface ethernet-1/2 admin-state disable` → `commit now`
-3. Observad cuántos pings se pierden mientras core2 asume el gateway virtual. Volved a activar el puerto.
+3. Observad cuántos pings se pierden. core2 ya era gateway activo: acc-of solo tiene que reaprender la MAC del
+   gateway por el puerto de core2. Volved a activar el puerto. Comparadlo con lo que tardaría VRRP (≈ 3 s).
 
 Capturad estas pruebas para el anexo del entregable.
 
@@ -91,6 +96,9 @@ Capturad estas pruebas para el anexo del entregable.
 | Síntoma | Qué hacer |
 |---|---|
 | `deploy` falla al descargar imágenes | Volved a lanzarlo; la primera descarga es grande. |
+| Un switch tiene todos los puertos `down` (`show interface brief`) | Su plano de datos no arrancó por falta de CPU. Comprobad `nproc` (debe ser 4); destruid y desplegad de nuevo con `--max-workers 1`. **No uséis `docker restart`**: borra los cables del lab. |
+| El Codespace tiene 2 cores | Codespaces → Change machine type → 4-core. Con 2 cores no arrancan los 4 SR Linux. |
+| `deploy` dice que un contenedor está parado (tras reiniciar el Codespace) | `sudo containerlab destroy -t e1.clab.yml --cleanup` y desplegad de nuevo. |
 | El Codespace va muy lento o se queda sin memoria | Comprobad que no tenéis dos labs desplegados (`sudo containerlab inspect --all`). |
 | Se han acabado las horas gratuitas | Avisad al profesor: hay alternativa en VM local o en el aula. |
 | Algún equipo no aplica la configuración | `docker logs clab-e1-<equipo>` y revisad el `.cfg`. |
