@@ -1,0 +1,67 @@
+# NovaLeague - Entregable 1 - Topología base
+#
+#            core1 ---------- core2          (enlace L3, sin VLANs: evita bucles)
+#            |    \          /    |
+#            |     \        /     |
+#          acc-of   \------/   acc-lab
+#          |    |              |      |
+#     pc-staff pc-tec      sala1-pc sala2-pc
+#
+# Rango de ejemplo: 10.100.0.0/16. Cada grupo debe cambiarlo por el de su ficha.
+name: e1
+
+topology:
+  kinds:
+    nokia_srlinux:
+      image: ghcr.io/nokia/srlinux:24.10.1
+    linux:
+      image: ghcr.io/hellt/network-multitool
+
+  nodes:
+    core1:
+      kind: nokia_srlinux
+      startup-config: configs/core1.cfg
+    core2:
+      kind: nokia_srlinux
+      startup-config: configs/core2.cfg
+    acc-of:
+      kind: nokia_srlinux
+      startup-config: configs/acc-of.cfg
+    acc-lab:
+      kind: nokia_srlinux
+      startup-config: configs/acc-lab.cfg
+
+    # VLAN 10 - Staff (configurada como ejemplo completo)
+    pc-staff:
+      kind: linux
+      exec:
+        - ip addr add 10.100.10.11/24 dev eth1
+        - ip route add 10.100.0.0/16 via 10.100.10.1
+    # VLAN 20 - Técnicos (la red la tenéis que configurar vosotros)
+    pc-tec:
+      kind: linux
+      exec:
+        - ip addr add 10.100.20.11/24 dev eth1
+        - ip route add 10.100.0.0/16 via 10.100.20.1
+    # VLAN 101 / 102 - Salas del Performance Lab (a configurar)
+    sala1-pc:
+      kind: linux
+      exec:
+        - ip addr add 10.100.101.11/24 dev eth1
+        - ip route add 10.100.0.0/16 via 10.100.101.1
+    sala2-pc:
+      kind: linux
+      exec:
+        - ip addr add 10.100.102.11/24 dev eth1
+        - ip route add 10.100.0.0/16 via 10.100.102.1
+
+  links:
+    - endpoints: ["core1:e1-1", "core2:e1-1"]
+    - endpoints: ["core1:e1-2", "acc-of:e1-1"]
+    - endpoints: ["core2:e1-2", "acc-of:e1-2"]
+    - endpoints: ["core1:e1-3", "acc-lab:e1-1"]
+    - endpoints: ["core2:e1-3", "acc-lab:e1-2"]
+    - endpoints: ["acc-of:e1-3", "pc-staff:eth1"]
+    - endpoints: ["acc-of:e1-4", "pc-tec:eth1"]
+    - endpoints: ["acc-lab:e1-3", "sala1-pc:eth1"]
+    - endpoints: ["acc-lab:e1-4", "sala2-pc:eth1"]
