@@ -7,10 +7,11 @@ con GitHub Codespaces.
 ## 1. Puesta en marcha (una sola vez)
 
 1. Cread una cuenta en GitHub si no tenéis (podéis solicitar el pack de estudiante en GitHub Education).
-2. Un miembro del grupo crea una copia del repositorio: botón **Use this template → Create a new repository**.
-   Añadid al resto del grupo como colaboradores.
-3. En vuestro repositorio: **Code → Codespaces → Create codespace on main**. Tarda unos minutos la primera vez.
-4. Se abre VS Code en el navegador con un terminal Linux. Todo lo que sigue se escribe en ese terminal.
+2. Un miembro del grupo crea una copia del repositorio: botón **Use this template → Create a new repository**,
+   con visibilidad **Private**. En *Settings → Collaborators*, añadid al resto del grupo y al profesor (usuario
+   `mlerism`). Trabajad siempre en vuestra copia, nunca en el repositorio del profesor.
+4. En vuestro repositorio: **Code → Codespaces → Create codespace on main**. Tarda unos minutos la primera vez.
+5. Se abre VS Code en el navegador con un terminal Linux. Todo lo que sigue se escribe en ese terminal.
 
 > **Horas gratuitas.** El Codespace usa una máquina de 4 cores, que consume vuestras horas gratuitas
 > mensuales. **Paradlo cuando no lo uséis** (menú de Codespaces → *Stop codespace*). Se detiene solo tras
